@@ -1,0 +1,64 @@
+
+1.Insert the geo data 
+db.geoData.insertOne({
+Name: “Eiffel tower”,
+Location:{
+type:”Point”,
+coordinates:[2.294471, 48.858371]
+}})
+
+2. Create a geospatial index on the field containing the geospatial coordinates in the collection.
+
+db.geoData.createIndex({ location: "2dsphere" })
+
+3.Write a query to find locations near a specific set of coordinates within a certain distance (e.g., 5 kilometres).
+
+var METERS_PER_KILOMETER = 1000
+db.geoData.find({ location: { $nearSphere: { $geometry: { type: "Point", coordinates: [ 2.294471, 48.858371 ] }, $maxDistance: 5 * METERS_PER_KILOMETER } } })
+
+4. Write a query to find locations that are within a specified geographical boundary, such as a polygon.
+
+db.geoData.find({ location:
+   { $geoWithin:
+      { $centerSphere: [ [78.042132,27.175015], 300 / 6378.1] } } })
+
+5.Calculate the distance between two sets of geospatial coordinates (e.g., between two locations) using MongoDB's geospatial functions.
+
+db.geoData.aggregate([
+  {
+    $geoNear: {
+      near: {type: "Point", coordinates: [-122.478293, 37.819927]},// golden gate bridge
+      distanceField: "distance",
+      spherical: true, // Set to true for spherical calculations
+      distanceMultiplier: 6371, // Earth's radius in kilometers
+      key: "location",
+      query: {name: "Eiffel tower"} // Optional filter for query
+    }
+  }
+]);
+
+6. Write a query to find locations that intersect with a specific line or shape
+db.geoData.find(
+   {
+     location: {
+       $geoIntersects: {
+          $geometry: {
+             type: "Polygon" ,
+             coordinates: [
+               [ [-73.984314, 40.752677],
+              [-73.980946, 40.756907],
+              [-73.985569, 40.762724],
+              [-73.991694, 40.758789],
+              [-73.984314, 40.752677] ]
+             ]
+          }
+       }
+     }
+   }
+)
+
+7.Update the geospatial coordinates of a specific location in the collection.
+db.geoData.updateOne({name: "Taj Mahal"}, {$set: {location: {type: "Point", coordinates: [78.04206, 27.173891]}}});
+
+8.Delete a document representing a location from the collection.
+db.geoData.deleteOne({name: "Eiffel Tower"});
